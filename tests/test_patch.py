@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from apply_ru import apply, add_catalog_to_pbx
+from migration_store_guard import DANGEROUS_FALLBACK
 
 PROJECT = r'''/* Begin PBXBuildFile section */
 /* Begin PBXFileReference section */
@@ -49,6 +50,9 @@ enum SupportedCurrencies {
  init() {
   let schema = Schema([
   ])
+  do {
+    container = try ModelContainer(for: schema, configurations: [config])
+''' + DANGEROUS_FALLBACK + '''
  }
  var body: some View {
   ContentView()
@@ -115,6 +119,10 @@ final class ExchangeRateService {
             self.assertEqual(catalog['strings']['Accept']['localizations']['ru']['stringUnit']['value'], 'Принять')
             self.assertEqual(catalog['strings']['Subscription']['localizations']['ru']['stringUnit']['value'], 'Подписка')
             self.assertEqual(catalog['strings']['Locked']['localizations']['ru']['stringUnit']['value'], 'Заблокировано')
+            app_swift = (root / 'MintLeaf/MintLeafApp.swift').read_text()
+            self.assertIn('FINTRACK DATA SAFETY', app_swift)
+            self.assertNotIn('removeItem(at:', app_swift)
+            self.assertNotIn('try? FileManager.default.copyItem', app_swift)
             # The sample-data generator must never reset a user preference.
             demo = (root / 'MintLeaf/Services/SampleDataGenerator.swift').read_text()
             self.assertNotIn('UserDefaults.standard.set("RUB", forKey: "defaultCurrency")', demo)

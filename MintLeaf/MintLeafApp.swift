@@ -51,26 +51,11 @@ struct MintLeafApp: App {
         do {
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
-            // Migration failed — back up the store before resetting
-            let storeURL = config.url
-            let backupURL = storeURL.deletingLastPathComponent()
-                .appendingPathComponent("MintLeaf-backup-\(Int(Date().timeIntervalSince1970)).store")
-            try? FileManager.default.copyItem(at: storeURL, to: backupURL)
-
-            let related = [
-                storeURL,
-                storeURL.appendingPathExtension("shm"),
-                storeURL.appendingPathExtension("wal"),
-            ]
-            for url in related {
-                try? FileManager.default.removeItem(at: url)
-            }
-            do {
-                container = try ModelContainer(for: schema, configurations: [config])
-                print("⚠️ SwiftData store was reset due to migration error. Backup saved to \(backupURL.path)")
-            } catch {
-                fatalError("Failed to configure SwiftData after reset: \(error)")
-            }
+            // FINTRACK DATA SAFETY: keep the original financial store intact.
+            // Copying only the main SQLite file can omit uncheckpointed WAL data.
+            // Stop launch rather than silently starting with an empty database.
+            fatalError("FinTrack Mac: не удалось открыть финансовую базу. " +
+                       "Автоматический сброс отключён для защиты данных. \(error)")
         }
     }
 

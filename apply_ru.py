@@ -12,6 +12,7 @@ from pathlib import Path
 from base_translations import RU as BASE_RU
 from extra_translations import EXTRA_RU
 from fix_calculations import patch as patch_financial_analytics
+from migration_store_guard import patch as patch_migration_store
 
 BASE = Path(__file__).resolve().parent
 
@@ -240,6 +241,7 @@ def apply(root: Path):
         let schema = Schema([''', 1)
         return src
     count += rewrite(root / "MintLeaf/MintLeafApp.swift", app_changes)
+    count += patch_migration_store(root, rewrite)
 
     count += patch_financial_analytics(root, rewrite)
 
