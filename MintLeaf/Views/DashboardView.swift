@@ -919,10 +919,10 @@ private struct FinTrackFlowPoint: Identifiable {
 
 private struct FinTrackCategoryTotal: Identifiable {
     let name: String
+    let id: UUID?
     let icon: String
     let color: Color
     let amount: Decimal
-    var id: String { name }
 }
 
 struct FinTrackDashboardView: View {
@@ -1052,17 +1052,22 @@ struct FinTrackDashboardView: View {
 
     private var topCategories: [FinTrackCategoryTotal] {
         let grouped = Dictionary(grouping: includedTransactions.filter(\.isExpense)) { tx in
-            tx.category?.name ?? "Без категории"
+            tx.category?.id
         }
-        return grouped.map { name, values in
+        return grouped.map { categoryID, values in
             let cat = values.first?.category
             return FinTrackCategoryTotal(
-                name: name,
+                name: cat?.name ?? "Без категории",
+                id: categoryID,
                 icon: cat?.icon ?? "square.grid.2x2",
                 color: cat.map { Color(hex: $0.colorHex) } ?? .gray,
                 amount: values.reduce(Decimal.zero) { $0 + abs(converted($1)) }
             )
-        }.sorted { $0.amount > $1.amount }.prefix(6).map { $0 }
+        }.sorted { a, b in
+            if a.amount != b.amount { return a.amount > b.amount }
+            if a.name != b.name { return a.name < b.name }
+            return (a.id?.uuidString ?? "") < (b.id?.uuidString ?? "")
+        }.prefix(6).map { $0 }
     }
     private var recentTransactions: [Transaction] {
         transactions.filter { $0.account != nil }.prefix(7).map { $0 }
